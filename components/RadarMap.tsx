@@ -30,16 +30,15 @@ const COORD_PRECISION = 1;
 
 function growthColorKey(growthRate: number | undefined): string {
   if (growthRate == null) return 'stable';
-  const pct = growthRate <= 1 ? growthRate * 100 : growthRate;
-  if (pct > 5) return 'growing';
-  if (pct < -5) return 'declining';
+  if (growthRate > 5) return 'growing';
+  if (growthRate < -5) return 'declining';
   return 'stable';
 }
 
 function glowRadius(mrr: number): number {
   const minR = 6;
   const maxR = 16;
-  const log = Math.log10(Math.max(100, mrr / 100));
+  const log = Math.log10(Math.max(1, mrr));
   return Math.min(maxR, Math.max(minR, minR + log * 2));
 }
 

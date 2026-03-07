@@ -11,6 +11,7 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
+import { formatDollars } from '@/lib/format';
 import type { Startup } from '@/types/startup';
 
 type Props = {
@@ -18,19 +19,14 @@ type Props = {
   onClose: () => void;
 };
 
-function formatMrr(cents: number) {
-  return `$${(cents / 100).toLocaleString()}`;
-}
-
 function formatGrowth(rate: number | undefined) {
   if (rate == null) return '—';
-  const pct = typeof rate === 'number' && rate <= 1 ? rate * 100 : rate;
-  return `${Number(pct).toFixed(1)}%`;
+  return `${Number(rate).toFixed(2)}%`;
 }
 
 function RevenueChart({ startup }: { startup: Startup }) {
-  const last30 = startup.revenueLast30Days / 100;
-  const mrr = startup.mrr / 100;
+  const last30 = startup.revenueLast30Days;
+  const mrr = startup.mrr;
 
   const data = [
     { name: 'Last 30d', value: last30 },
@@ -119,7 +115,7 @@ export function StartupPanel({ startup, onClose }: Props) {
           className={
             isMobile
               ? 'absolute bottom-0 left-0 right-0 z-40 flex w-full max-h-[85dvh] flex-col overflow-hidden rounded-t-2xl safe-area-pb'
-              : 'absolute right-0 top-0 bottom-0 z-40 flex max-h-[100dvh] w-[420px] max-w-full flex-col overflow-hidden'
+              : 'absolute right-0 top-0 bottom-0 z-40 flex max-h-dvh w-[420px] max-w-full flex-col overflow-hidden'
           }
           style={{
             ...(!isMobile && { right: 0, left: 'auto', top: 0, bottom: 0 }),
@@ -275,7 +271,7 @@ export function StartupPanel({ startup, onClose }: Props) {
               {[
                 {
                   label: 'MRR',
-                  value: formatMrr(startup.mrr),
+                  value: formatDollars(startup.mrr),
                   unit: '/mo',
                   accent: true,
                 },

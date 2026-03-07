@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { flag } from 'country-emoji';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
+import { formatDollars } from '@/lib/format';
 import type { Startup } from '@/types/startup';
 
 type Props = {
@@ -117,7 +118,7 @@ export function ActivityLog({
                     </span>
                     <span className='max-w-[100px] truncate'>{s.name}</span>
                     <span style={{ color: '#64748b' }}>
-                      ${((s.mrr ?? 0) / 100).toLocaleString()}
+                      {formatDollars(s.mrr ?? 0)}
                     </span>
                   </button>
                 ))}
@@ -192,7 +193,7 @@ export function ActivityLog({
                 </span>
                 <span className='max-w-[140px] truncate'>{s.name}</span>
                 <span style={{ color: '#64748b' }}>
-                  ${((s.mrr ?? 0) / 100).toLocaleString()}
+                  {formatDollars(s.mrr ?? 0)}
                 </span>
                 <span style={{ color: '#64748b' }}>
                   {formatTimeAgo(s.lastSyncedAt ?? 0)}

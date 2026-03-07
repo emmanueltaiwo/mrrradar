@@ -4,6 +4,7 @@ import { flag, name as countryName } from 'country-emoji';
 import { useState, useRef } from 'react';
 import { FiltersBar } from '@/components/FiltersBar';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
+import { formatDollars } from '@/lib/format';
 import type { Filters } from '@/components/Dashboard';
 import type { Startup } from '@/types/startup';
 
@@ -12,13 +13,6 @@ type Props = {
   filters: Filters;
   onFiltersChange: (f: Filters) => void;
 };
-
-function formatEstValue(cents: number) {
-  const val = cents / 100;
-  if (val >= 1_000_000) return `$${(val / 1_000_000).toFixed(1)}M`;
-  if (val >= 1_000) return `$${(val / 1_000).toFixed(1)}K`;
-  return `$${val.toLocaleString()}`;
-}
 
 export function StatsPanel({ startups, filters, onFiltersChange }: Props) {
   const [filtersOpen, setFiltersOpen] = useState(false);
@@ -79,7 +73,7 @@ export function StatsPanel({ startups, filters, onFiltersChange }: Props) {
               className='font-mono text-[10px] font-bold tabular-nums'
               style={{ color: '#22c55e' }}
             >
-              {formatEstValue(estValue)}
+              {formatDollars(estValue)}
             </span>
           </button>
         ) : (
@@ -158,7 +152,7 @@ export function StatsPanel({ startups, filters, onFiltersChange }: Props) {
                       className='font-mono text-lg font-bold tabular-nums'
                       style={{ color: '#22c55e' }}
                     >
-                      {formatEstValue(estValue)}
+                      {formatDollars(estValue)}
                     </p>
                   </div>
                 </div>
@@ -338,7 +332,7 @@ export function StatsPanel({ startups, filters, onFiltersChange }: Props) {
                   textShadow: '0 0 12px rgba(34,197,94,0.4)',
                 }}
               >
-                {formatEstValue(estValue)}
+                {formatDollars(estValue)}
               </p>
               <p
                 className='mt-0.5 font-mono text-[8px] uppercase'

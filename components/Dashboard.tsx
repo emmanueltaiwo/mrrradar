@@ -60,8 +60,8 @@ export function Dashboard() {
     return {
       name: debouncedFilters.name.trim() || undefined,
       country: country || undefined,
-      minMrr: Number.isFinite(minMrr) ? minMrr * 100 : undefined,
-      maxMrr: Number.isFinite(maxMrr) ? maxMrr * 100 : undefined,
+      minMrr: Number.isFinite(minMrr) ? minMrr : undefined,
+      maxMrr: Number.isFinite(maxMrr) ? maxMrr : undefined,
     };
   }, [debouncedFilters]) satisfies StartupsFilterArgs;
 
