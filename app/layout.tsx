@@ -3,6 +3,7 @@ import { Orbitron, JetBrains_Mono } from 'next/font/google';
 import { QueryProvider } from '@/components/QueryProvider';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import './globals.css';
+import { Analytics } from '@vercel/analytics/next';
 
 const orbitron = Orbitron({
   variable: '--font-orbitron',
@@ -54,6 +55,7 @@ export default function RootLayout({
         className={`${orbitron.variable} ${jetbrains.variable} antialiased`}
       >
         <QueryProvider>{children}</QueryProvider>
+        <Analytics />
       </body>
     </html>
   );
