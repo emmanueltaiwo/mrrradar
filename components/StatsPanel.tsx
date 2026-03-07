@@ -2,12 +2,10 @@
 
 import { flag, name as countryName } from 'country-emoji';
 import { useState, useRef } from 'react';
-import type { Doc } from '@/convex/_generated/dataModel';
 import { FiltersBar } from '@/components/FiltersBar';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import type { Filters } from '@/components/Dashboard';
-
-type Startup = Doc<'startups'>;
+import type { Startup } from '@/types/startup';
 
 type Props = {
   startups: Startup[];

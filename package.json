@@ -6,10 +6,11 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "sync-startups": "node scripts/sync-startups-to-json.mjs"
   },
   "dependencies": {
-    "convex": "^1.32.0",
+    "@tanstack/react-query": "^5.90.21",
     "country-emoji": "^1.5.6",
     "mapbox-gl": "^3.19.1",
     "motion": "^12.35.0",

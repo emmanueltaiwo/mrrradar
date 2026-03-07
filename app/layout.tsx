@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { Orbitron, JetBrains_Mono } from 'next/font/google';
-import { ConvexClientProvider } from '@/components/ConvexClientProvider';
+import { QueryProvider } from '@/components/QueryProvider';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import './globals.css';
 
@@ -20,19 +20,22 @@ const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://mrrradar.com';
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
-  title: 'MRRRADAR — Signal',
-  description: 'Profitable startups. Verified. Live.',
+  title: 'MRRRADAR — Map of profitable startups with verified MRR',
+  description:
+    'Explore profitable startups on a global map. Filter by country and revenue, see verified MRR and growth. Built on TrustMRR data.',
   openGraph: {
-    title: 'MRRRADAR — Signal',
-    description: 'Profitable startups. Verified. Live.',
+    title: 'MRRRADAR — Map of profitable startups with verified MRR',
+    description:
+      'Explore profitable startups on a global map. Filter by country and revenue, see verified MRR and growth. Built on TrustMRR data.',
     url: siteUrl,
     siteName: 'MRRRADAR',
     type: 'website',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'MRRRADAR — Signal',
-    description: 'Profitable startups. Verified. Live.',
+    title: 'MRRRADAR — Map of profitable startups with verified MRR',
+    description:
+      'Explore profitable startups on a global map. Filter by country and revenue, see verified MRR and growth. Built on TrustMRR data.',
   },
 };
 
@@ -50,7 +53,7 @@ export default function RootLayout({
       <body
         className={`${orbitron.variable} ${jetbrains.variable} antialiased`}
       >
-        <ConvexClientProvider>{children}</ConvexClientProvider>
+        <QueryProvider>{children}</QueryProvider>
       </body>
     </html>
   );

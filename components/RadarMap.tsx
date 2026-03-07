@@ -1,10 +1,8 @@
 'use client';
 
 import { useRef, useEffect, memo, useState, useMemo } from 'react';
-import type { Doc } from '@/convex/_generated/dataModel';
 import { RadarSweepOverlay } from '@/components/RadarSweepOverlay';
-
-type Startup = Doc<'startups'>;
+import type { Startup } from '@/types/startup';
 
 export type FlyToTarget = {
   center: [number, number];

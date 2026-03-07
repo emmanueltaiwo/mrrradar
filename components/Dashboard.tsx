@@ -2,14 +2,19 @@
 
 import { code } from 'country-emoji';
 import { useState, useMemo, useDeferredValue } from 'react';
-import { useQuery } from 'convex/react';
-import { api } from '@/convex/_generated/api';
-import { getCoordsForCountry } from '@/convex/countryCoords';
+import { useQuery } from '@tanstack/react-query';
+import { getCoordsForCountry } from '@/lib/countryCoords';
 import { RadarMap, type FlyToTarget } from '@/components/RadarMap';
 import { StartupPanel } from '@/components/StartupPanel';
 import { StatsPanel } from '@/components/StatsPanel';
 import { ActivityLog } from '@/components/ActivityLog';
 import { useDebounce } from '@/hooks/useDebounce';
+import {
+  fetchStartups,
+  startupsQueryKey,
+  type StartupsFilterArgs,
+} from '@/lib/startups-api';
+import type { Startup } from '@/types/startup';
 
 export type Filters = {
   name: string;
@@ -58,15 +63,20 @@ export function Dashboard() {
       minMrr: Number.isFinite(minMrr) ? minMrr * 100 : undefined,
       maxMrr: Number.isFinite(maxMrr) ? maxMrr * 100 : undefined,
     };
-  }, [debouncedFilters]);
+  }, [debouncedFilters]) satisfies StartupsFilterArgs;
 
-  const startupsRaw = useQuery(api.startups.filterStartups, filterArgs);
-  const isQueryLoading = startupsRaw === undefined;
+  const { data, isFetching, isPending } = useQuery({
+    queryKey: startupsQueryKey(filterArgs),
+    queryFn: () => fetchStartups(filterArgs),
+    placeholderData: (previousData) => previousData,
+  });
+
+  const startupsRaw = data?.startups;
   const startups = useDeferredValue(startupsRaw ?? []);
-  const selectedStartup = useQuery(
-    api.startups.getStartupBySlug,
-    selectedSlug ? { slug: selectedSlug } : 'skip',
-  );
+  const selectedStartup =
+    selectedSlug != null
+      ? (startups.find((s) => s.slug === selectedSlug) ?? null)
+      : null;
 
   const DEFAULT_MAP_VIEW: FlyToTarget = { center: [0, 20], zoom: 1.5 };
 
@@ -96,7 +106,7 @@ export function Dashboard() {
   }, [debouncedFilters, filterArgs.country, startups]);
 
   const isInitialLoad = !mapDataReady;
-  const isFiltering = mapDataReady && isQueryLoading;
+  const isFiltering = mapDataReady && (isFetching || isPending);
 
   return (
     <div className='relative z-10 flex h-screen w-full max-w-[100vw] flex-col overflow-hidden'>

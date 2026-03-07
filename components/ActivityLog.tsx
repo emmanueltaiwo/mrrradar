@@ -2,10 +2,8 @@
 
 import { useState } from 'react';
 import { flag } from 'country-emoji';
-import type { Doc } from '@/convex/_generated/dataModel';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
-
-type Startup = Doc<'startups'>;
+import type { Startup } from '@/types/startup';
 
 type Props = {
   startups: Startup[];

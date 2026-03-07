@@ -11,10 +11,10 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
-import type { Doc } from '@/convex/_generated/dataModel';
+import type { Startup } from '@/types/startup';
 
 type Props = {
-  startup: Doc<'startups'> | null;
+  startup: Startup | null;
   onClose: () => void;
 };
 
@@ -28,7 +28,7 @@ function formatGrowth(rate: number | undefined) {
   return `${Number(pct).toFixed(1)}%`;
 }
 
-function RevenueChart({ startup }: { startup: Doc<'startups'> }) {
+function RevenueChart({ startup }: { startup: Startup }) {
   const last30 = startup.revenueLast30Days / 100;
   const mrr = startup.mrr / 100;
 
