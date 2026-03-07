@@ -382,7 +382,6 @@ export function Dashboard() {
           onSelectStartup={setSelectedSlug}
           onMapDataReady={() => setMapDataReady(true)}
           flyToTarget={flyToTarget}
-          maxLogos={isMobile ? 0 : undefined}
         />
 
         <StatsPanel

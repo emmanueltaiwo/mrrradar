@@ -321,7 +321,7 @@ export const RadarMap = memo(function RadarMap({
           filter: ['!', ['has', 'cluster']],
           layout: {
             'icon-image': ['coalesce', ['get', 'icon'], DEFAULT_ICON_ID],
-            'icon-size': 0.3,
+            'icon-size': 0.7,
             'icon-allow-overlap': true,
             'icon-ignore-placement': true,
           },
