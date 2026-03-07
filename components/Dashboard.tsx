@@ -106,7 +106,7 @@ export function Dashboard() {
   }, [debouncedFilters, filterArgs.country, startups]);
 
   const isInitialLoad = !mapDataReady;
-  const isFiltering = mapDataReady && (isFetching || isPending);
+  const isFiltering = isFetching || isPending;
 
   return (
     <div className='relative z-10 flex h-screen w-full max-w-[100vw] flex-col overflow-hidden'>
