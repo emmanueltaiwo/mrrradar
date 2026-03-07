@@ -105,8 +105,8 @@ export function Dashboard() {
     return { center: [top.lng, top.lat], zoom: 9 };
   }, [debouncedFilters, filterArgs.country, startups]);
 
-  const isInitialLoad = !mapDataReady;
-  const isFiltering = isInitialLoad && (isFetching || isPending);
+  const isInitialLoad = !data?.startups || !mapDataReady;
+  const isFiltering = !isInitialLoad && (isFetching || isPending);
 
   return (
     <div className='relative z-10 flex h-screen w-full max-w-[100vw] flex-col overflow-hidden'>
