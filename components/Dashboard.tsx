@@ -370,6 +370,7 @@ export function Dashboard() {
 
         <StatsPanel
           startups={startups}
+          totalCount={data?.totalCount}
           filters={filters}
           onFiltersChange={setFilters}
         />

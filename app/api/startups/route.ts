@@ -26,8 +26,10 @@ function matchesName(
 function filterStartups(
   startups: StartupDoc[],
   params: { name?: string; country?: string; minMrr?: number; maxMrr?: number },
-): StartupDoc[] {
-  if (params.country === INVALID_COUNTRY_SENTINEL) return [];
+): { startups: StartupDoc[]; totalCount: number } {
+  if (params.country === INVALID_COUNTRY_SENTINEL) {
+    return { startups: [], totalCount: 0 };
+  }
 
   const nameLower = params.name?.trim().toLowerCase();
   const country = params.country?.trim().toUpperCase();
@@ -51,7 +53,8 @@ function filterStartups(
     candidates = candidates.filter((s) => s.mrr <= maxMrr);
   }
 
-  // Default: sort by mrr desc and cap
+  // Default: sort by mrr desc and cap for response; totalCount is before cap
+  const totalCount = candidates.length;
   if (country === undefined || country === '') {
     candidates.sort((a, b) => b.mrr - a.mrr);
     candidates = candidates.slice(0, DEFAULT_LIMIT);
@@ -61,7 +64,7 @@ function filterStartups(
     candidates = candidates.filter((s) => matchesName(s, nameLower));
   }
 
-  return candidates;
+  return { startups: candidates, totalCount };
 }
 
 export async function GET(request: NextRequest) {
@@ -93,7 +96,7 @@ export async function GET(request: NextRequest) {
     const minMrr = minMrrParam != null ? Number(minMrrParam) : undefined;
     const maxMrr = maxMrrParam != null ? Number(maxMrrParam) : undefined;
 
-    const startups = filterStartups(allStartups, {
+    const { startups, totalCount } = filterStartups(allStartups, {
       name,
       country,
       minMrr: Number.isFinite(minMrr) ? minMrr : undefined,
@@ -101,7 +104,7 @@ export async function GET(request: NextRequest) {
     });
 
     return NextResponse.json(
-      { startups, syncedAt },
+      { startups, syncedAt, totalCount },
       {
         headers: {
           'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300',

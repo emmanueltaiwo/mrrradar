@@ -10,6 +10,7 @@ export type StartupsFilterArgs = {
 export type StartupsResponse = {
   startups: Startup[];
   syncedAt: string;
+  totalCount: number;
 };
 
 export async function fetchStartups(

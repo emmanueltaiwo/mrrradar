@@ -10,11 +10,17 @@ import type { Startup } from '@/types/startup';
 
 type Props = {
   startups: Startup[];
+  totalCount?: number;
   filters: Filters;
   onFiltersChange: (f: Filters) => void;
 };
 
-export function StatsPanel({ startups, filters, onFiltersChange }: Props) {
+export function StatsPanel({
+  startups,
+  totalCount,
+  filters,
+  onFiltersChange,
+}: Props) {
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -64,7 +70,7 @@ export function StatsPanel({ startups, filters, onFiltersChange }: Props) {
               className='font-mono text-[10px] font-bold tabular-nums'
               style={{ color: '#f59e0b' }}
             >
-              {startups.length}
+              {totalCount ?? startups.length}
             </span>
             <span className='font-mono text-[9px]' style={{ color: '#64748b' }}>
               ·
@@ -132,7 +138,7 @@ export function StatsPanel({ startups, filters, onFiltersChange }: Props) {
                       className='font-mono text-xl font-bold tabular-nums'
                       style={{ color: '#f59e0b' }}
                     >
-                      {startups.length}
+                      {totalCount ?? startups.length}
                     </p>
                   </div>
                   <div
@@ -290,7 +296,7 @@ export function StatsPanel({ startups, filters, onFiltersChange }: Props) {
                   textShadow: '0 0 12px rgba(245,158,11,0.4)',
                 }}
               >
-                {startups.length}
+                {totalCount ?? startups.length}
               </p>
               <p
                 className='mt-0.5 font-mono text-[8px] uppercase'
