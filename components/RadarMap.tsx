@@ -15,6 +15,8 @@ type Props = {
   onSelectStartup: (slug: string | null) => void;
   onMapDataReady?: () => void;
   flyToTarget?: FlyToTarget | null;
+  /** Cap logo loads (0 = no logos, use default icon). Use on mobile for perf. */
+  maxLogos?: number;
 };
 
 const SOURCE_ID = 'startups';
@@ -214,6 +216,7 @@ export const RadarMap = memo(function RadarMap({
   onSelectStartup,
   onMapDataReady,
   flyToTarget,
+  maxLogos,
 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<import('mapbox-gl').Map | null>(null);
@@ -453,7 +456,9 @@ export const RadarMap = memo(function RadarMap({
     const queue: { slug: string; url: string }[] = [];
     let inFlight = 0;
 
+    const logoCap = maxLogos ?? startups.length;
     for (const s of startups) {
+      if (logoCap !== undefined && queue.length >= logoCap) break;
       if (!s.logo?.trim()) continue;
       if (map.hasImage(s.slug)) {
         nextLoaded.add(s.slug);
@@ -520,7 +525,7 @@ export const RadarMap = memo(function RadarMap({
         flushLogoTimeoutRef.current = null;
       }
     };
-  }, [mapReady, startups]);
+  }, [mapReady, startups, maxLogos]);
 
   useEffect(() => {
     if (!mapReady || !mapRef.current || !flyToTarget) return;

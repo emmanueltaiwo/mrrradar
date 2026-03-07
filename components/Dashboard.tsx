@@ -9,6 +9,7 @@ import { StartupPanel } from '@/components/StartupPanel';
 import { StatsPanel } from '@/components/StatsPanel';
 import { ActivityLog } from '@/components/ActivityLog';
 import { useDebounce } from '@/hooks/useDebounce';
+import { useMediaQuery } from '@/hooks/useMediaQuery';
 import {
   fetchStartups,
   startupsQueryKey,
@@ -33,12 +34,14 @@ const defaultFilters: Filters = {
 export const INVALID_COUNTRY_SENTINEL = '__INVALID_COUNTRY__';
 
 const FILTER_DEBOUNCE_MS = 500;
+const MOBILE_MAP_CAP = 600;
 
 export function Dashboard() {
   const [filters, setFilters] = useState<Filters>(defaultFilters);
   const [selectedSlug, setSelectedSlug] = useState<string | null>(null);
   const [mapDataReady, setMapDataReady] = useState(false);
   const [mapReadyTimedOut, setMapReadyTimedOut] = useState(false);
+  const isMobile = useMediaQuery('(max-width: 767px)');
   const debouncedFilters = useDebounce(filters, FILTER_DEBOUNCE_MS);
 
   // On mobile the map may never fire 'idle'; don't block the app forever
@@ -115,6 +118,11 @@ export function Dashboard() {
   const mapReady = mapDataReady || mapReadyTimedOut;
   const isInitialLoad = !data?.startups || !mapReady;
   const isFiltering = !isInitialLoad && (isFetching || isPending);
+
+  const startupsForMap = useMemo(
+    () => (isMobile ? startups.slice(0, MOBILE_MAP_CAP) : startups),
+    [isMobile, startups],
+  );
 
   return (
     <div className='relative z-10 flex h-dvh w-full max-w-[100vw] flex-col overflow-hidden'>
@@ -369,11 +377,12 @@ export function Dashboard() {
 
       <main className='relative flex-1 overflow-hidden'>
         <RadarMap
-          startups={startups}
+          startups={startupsForMap}
           selectedSlug={selectedSlug}
           onSelectStartup={setSelectedSlug}
           onMapDataReady={() => setMapDataReady(true)}
           flyToTarget={flyToTarget}
+          maxLogos={isMobile ? 0 : undefined}
         />
 
         <StatsPanel
