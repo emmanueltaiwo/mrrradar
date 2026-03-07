@@ -26,9 +26,9 @@ function matchesName(
 function filterStartups(
   startups: StartupDoc[],
   params: { name?: string; country?: string; minMrr?: number; maxMrr?: number },
-): { startups: StartupDoc[]; totalCount: number } {
+): { startups: StartupDoc[]; totalCount: number; totalMrr: number } {
   if (params.country === INVALID_COUNTRY_SENTINEL) {
-    return { startups: [], totalCount: 0 };
+    return { startups: [], totalCount: 0, totalMrr: 0 };
   }
 
   const nameLower = params.name?.trim().toLowerCase();
@@ -53,8 +53,10 @@ function filterStartups(
     candidates = candidates.filter((s) => s.mrr <= maxMrr);
   }
 
-  // Default: sort by mrr desc and cap for response; totalCount is before cap
+  // Totals from full filtered set (before cap / name filter)
   const totalCount = candidates.length;
+  const totalMrr = candidates.reduce((sum, s) => sum + (s.mrr ?? 0), 0);
+
   if (country === undefined || country === '') {
     candidates.sort((a, b) => b.mrr - a.mrr);
     candidates = candidates.slice(0, DEFAULT_LIMIT);
@@ -64,7 +66,7 @@ function filterStartups(
     candidates = candidates.filter((s) => matchesName(s, nameLower));
   }
 
-  return { startups: candidates, totalCount };
+  return { startups: candidates, totalCount, totalMrr };
 }
 
 export async function GET(request: NextRequest) {
@@ -96,7 +98,7 @@ export async function GET(request: NextRequest) {
     const minMrr = minMrrParam != null ? Number(minMrrParam) : undefined;
     const maxMrr = maxMrrParam != null ? Number(maxMrrParam) : undefined;
 
-    const { startups, totalCount } = filterStartups(allStartups, {
+    const { startups, totalCount, totalMrr } = filterStartups(allStartups, {
       name,
       country,
       minMrr: Number.isFinite(minMrr) ? minMrr : undefined,
@@ -104,7 +106,7 @@ export async function GET(request: NextRequest) {
     });
 
     return NextResponse.json(
-      { startups, syncedAt, totalCount },
+      { startups, syncedAt, totalCount, totalMrr },
       {
         headers: {
           'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300',

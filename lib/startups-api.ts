@@ -11,6 +11,8 @@ export type StartupsResponse = {
   startups: Startup[];
   syncedAt: string;
   totalCount: number;
+  /** Sum of MRR for all matching startups (before cap), in cents */
+  totalMrr: number;
 };
 
 export async function fetchStartups(

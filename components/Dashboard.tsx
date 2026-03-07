@@ -371,6 +371,7 @@ export function Dashboard() {
         <StatsPanel
           startups={startups}
           totalCount={data?.totalCount}
+          totalMrr={data?.totalMrr}
           filters={filters}
           onFiltersChange={setFilters}
         />

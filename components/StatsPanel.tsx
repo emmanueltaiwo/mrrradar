@@ -11,6 +11,8 @@ import type { Startup } from '@/types/startup';
 type Props = {
   startups: Startup[];
   totalCount?: number;
+  /** Sum of MRR for full filtered set (before cap), in cents. Used for Est. value. */
+  totalMrr?: number;
   filters: Filters;
   onFiltersChange: (f: Filters) => void;
 };
@@ -18,6 +20,7 @@ type Props = {
 export function StatsPanel({
   startups,
   totalCount,
+  totalMrr: totalMrrFromApi,
   filters,
   onFiltersChange,
 }: Props) {
@@ -26,7 +29,8 @@ export function StatsPanel({
   const scrollRef = useRef<HTMLDivElement>(null);
   const isMobile = useMediaQuery('(max-width: 767px)');
 
-  const totalMrr = startups.reduce((sum, s) => sum + (s.mrr ?? 0), 0);
+  const totalMrr =
+    totalMrrFromApi ?? startups.reduce((sum, s) => sum + (s.mrr ?? 0), 0);
   const estValue = totalMrr * 36;
 
   const byCountry = startups.reduce<Record<string, number>>((acc, s) => {
