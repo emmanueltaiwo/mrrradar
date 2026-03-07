@@ -39,7 +39,7 @@ export function ActivityLog({
   if (isMobile) {
     return (
       <div
-        className='absolute bottom-0 left-0 right-0 z-30 sm:hidden'
+        className='absolute bottom-0 left-0 right-0 z-30 safe-area-pb sm:hidden'
         style={{
           background:
             'linear-gradient(180deg, #1a1d24 0%, #0f1216 50%, #0a0c10 100%)',

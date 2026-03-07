@@ -109,7 +109,7 @@ export function Dashboard() {
   const isFiltering = !isInitialLoad && (isFetching || isPending);
 
   return (
-    <div className='relative z-10 flex h-screen w-full max-w-[100vw] flex-col overflow-hidden'>
+    <div className='relative z-10 flex h-dvh w-full max-w-[100vw] flex-col overflow-hidden'>
       {isInitialLoad && (
         <div
           className='absolute inset-0 z-50 flex flex-col items-center justify-center gap-4 bg-background'

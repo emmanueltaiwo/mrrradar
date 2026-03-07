@@ -110,6 +110,11 @@ body::after {
     0 0 40px var(--edge-glow);
 }
 
+/* Safe area padding for mobile (notch, home indicator) */
+.safe-area-pb {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
 /* Hide scrollbar but keep scroll functionality */
 .scrollbar-none {
   scrollbar-width: none;
