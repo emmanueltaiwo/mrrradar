@@ -5,6 +5,7 @@ import { useState, useRef } from 'react';
 import { FiltersBar } from '@/components/FiltersBar';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { formatDollars } from '@/lib/format';
+import { SocialLinks } from '@/components/SocialLinks';
 import type { Filters } from '@/components/Dashboard';
 import type { Startup } from '@/types/startup';
 
@@ -204,6 +205,7 @@ export function StatsPanel({
                     </div>
                   )}
                 </div>
+                <SocialLinks />
               </div>
             </div>
           </div>
@@ -486,6 +488,7 @@ export function StatsPanel({
               </div>
             )}
           </div>
+          <SocialLinks />
         </div>
 
         <div
