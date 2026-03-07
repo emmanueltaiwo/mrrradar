@@ -3,7 +3,7 @@
 export function RadarSweepOverlay() {
   return (
     <div
-      className='pointer-events-none absolute inset-0 z-[9999] flex items-center justify-center'
+      className='pointer-events-none absolute inset-0 z-9999 flex items-center justify-center'
       aria-hidden
     >
       {/* Radar scope - circular, centered, scales with viewport */}

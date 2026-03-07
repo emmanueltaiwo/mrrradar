@@ -119,7 +119,7 @@ export function StartupPanel({ startup, onClose }: Props) {
           className={
             isMobile
               ? 'absolute bottom-0 left-0 right-0 z-40 flex w-full max-h-[85dvh] flex-col overflow-hidden rounded-t-2xl safe-area-pb'
-              : 'absolute right-0 top-0 bottom-0 z-40 flex w-[420px] max-w-full flex-col overflow-hidden'
+              : 'absolute right-0 top-0 bottom-0 z-40 flex max-h-[100dvh] w-[420px] max-w-full flex-col overflow-hidden'
           }
           style={{
             ...(!isMobile && { right: 0, left: 'auto', top: 0, bottom: 0 }),

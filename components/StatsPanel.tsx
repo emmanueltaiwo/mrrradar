@@ -93,7 +93,7 @@ export function StatsPanel({ startups, filters, onFiltersChange }: Props) {
               aria-hidden
             />
             <div
-              className='relative z-10 max-h-[38vh] w-full max-w-[340px] overflow-y-auto rounded-t-2xl'
+              className='relative z-10 flex max-h-[80dvh] w-full max-w-[340px] flex-col overflow-hidden rounded-t-2xl'
               style={{
                 background: 'linear-gradient(180deg, #1a1d24 0%, #0f1216 100%)',
                 border: '2px solid #2a2e36',
@@ -101,7 +101,7 @@ export function StatsPanel({ startups, filters, onFiltersChange }: Props) {
               }}
             >
               <div
-                className='sticky top-0 flex items-center justify-between border-b px-4 py-3'
+                className='shrink-0 flex items-center justify-between border-b px-4 py-3'
                 style={{ borderColor: '#2a2e36', background: '#1a1d24' }}
               >
                 <span
@@ -119,7 +119,7 @@ export function StatsPanel({ startups, filters, onFiltersChange }: Props) {
                   Close
                 </button>
               </div>
-              <div className='p-4'>
+              <div className='min-h-0 flex-1 overflow-y-auto overflow-x-hidden p-4'>
                 <div className='mb-4 flex gap-3'>
                   <div
                     className='flex-1 rounded p-3 text-center'
@@ -209,9 +209,11 @@ export function StatsPanel({ startups, filters, onFiltersChange }: Props) {
   }
 
   return (
-    <div className='absolute left-4 top-18 z-20 hidden w-[min(380px,calc(100vw-2rem))] sm:block'>
+    <div
+      className='absolute left-4 top-18 z-20 hidden w-[min(380px,calc(100vw-2rem))] max-h-[calc(100dvh-4.5rem-5rem)] flex-col overflow-hidden sm:flex'
+    >
       <div
-        className='relative overflow-hidden'
+        className='relative flex min-h-0 flex-1 flex-col overflow-hidden'
         style={{
           background:
             'linear-gradient(180deg, #1a1d24 0%, #0f1216 50%, #0a0c10 100%)',
@@ -259,7 +261,7 @@ export function StatsPanel({ startups, filters, onFiltersChange }: Props) {
           />
         </div>
 
-        <div className='relative p-3 sm:p-4'>
+        <div className='relative min-h-0 flex-1 overflow-y-auto overflow-x-hidden p-3 sm:p-4'>
           <div className='mb-4 flex gap-3'>
             <div
               className='relative flex min-w-0 flex-1 flex-col items-center justify-center p-4'
