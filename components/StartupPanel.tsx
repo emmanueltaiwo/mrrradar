@@ -24,13 +24,50 @@ function formatGrowth(rate: number | undefined) {
   return `${Number(rate).toFixed(2)}%`;
 }
 
+function formatFoundedDate(iso: string | undefined) {
+  if (!iso) return null;
+  try {
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return null;
+    return d.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    });
+  } catch {
+    return null;
+  }
+}
+
+function XLogo({
+  className,
+  style,
+}: {
+  className?: string;
+  style?: React.CSSProperties;
+}) {
+  return (
+    <svg
+      viewBox='0 0 24 24'
+      fill='currentColor'
+      className={className}
+      style={style}
+      aria-hidden
+    >
+      <path d='M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z' />
+    </svg>
+  );
+}
+
 function RevenueChart({ startup }: { startup: Startup }) {
   const last30 = startup.revenueLast30Days;
   const mrr = startup.mrr;
 
+  const total = startup.revenueTotal ?? 0;
   const data = [
     { name: 'Last 30d', value: last30 },
     { name: 'MRR', value: mrr },
+    { name: 'Total', value: total },
   ].filter((d) => d.value > 0);
   if (data.length === 0) {
     return (
@@ -276,6 +313,12 @@ export function StartupPanel({ startup, onClose }: Props) {
                   accent: true,
                 },
                 {
+                  label: 'Total revenue',
+                  value: formatDollars(startup.revenueTotal ?? 0),
+                  unit: '',
+                  accent: true,
+                },
+                {
                   label: 'Growth 30d',
                   value: formatGrowth(startup.growthRate),
                   unit: '',
@@ -371,6 +414,49 @@ export function StartupPanel({ startup, onClose }: Props) {
                     style={{ color: '#e5e7eb' }}
                   >
                     {countryName(startup.country) ?? startup.country}
+                  </span>
+                </div>
+              )}
+              {startup.xHandle && (
+                <a
+                  href={`https://x.com/${startup.xHandle.replace(/^@/, '')}`}
+                  target='_blank'
+                  rel='noopener noreferrer'
+                  className='flex items-center gap-2 px-3 py-2 transition-colors hover:opacity-80'
+                  style={{
+                    background: 'rgba(0,0,0,0.3)',
+                    border: '1px solid #374151',
+                    color: '#e5e7eb',
+                  }}
+                >
+                  <XLogo className='h-3.5 w-3.5 shrink-0' />
+                  <span
+                    className='font-mono text-[11px]'
+                    style={{ color: '#e5e7eb' }}
+                  >
+                    @{startup.xHandle.replace(/^@/, '')}
+                  </span>
+                </a>
+              )}
+              {formatFoundedDate(startup.foundedDate) && (
+                <div
+                  className='flex items-center gap-2 px-3 py-2'
+                  style={{
+                    background: 'rgba(0,0,0,0.3)',
+                    border: '1px solid #374151',
+                  }}
+                >
+                  <span
+                    className='font-mono text-[9px]'
+                    style={{ color: '#64748b' }}
+                  >
+                    [ FOUNDED ]
+                  </span>
+                  <span
+                    className='font-mono text-[11px]'
+                    style={{ color: '#e5e7eb' }}
+                  >
+                    {formatFoundedDate(startup.foundedDate)}
                   </span>
                 </div>
               )}
