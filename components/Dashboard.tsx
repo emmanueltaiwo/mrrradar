@@ -1,7 +1,7 @@
 'use client';
 
 import { code } from 'country-emoji';
-import { useState, useMemo, useDeferredValue } from 'react';
+import { useState, useMemo, useDeferredValue, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { getCoordsForCountry } from '@/lib/countryCoords';
 import { RadarMap, type FlyToTarget } from '@/components/RadarMap';
@@ -38,7 +38,14 @@ export function Dashboard() {
   const [filters, setFilters] = useState<Filters>(defaultFilters);
   const [selectedSlug, setSelectedSlug] = useState<string | null>(null);
   const [mapDataReady, setMapDataReady] = useState(false);
+  const [mapReadyTimedOut, setMapReadyTimedOut] = useState(false);
   const debouncedFilters = useDebounce(filters, FILTER_DEBOUNCE_MS);
+
+  // On mobile the map may never fire 'idle'; don't block the app forever
+  useEffect(() => {
+    const t = setTimeout(() => setMapReadyTimedOut(true), 10_000);
+    return () => clearTimeout(t);
+  }, []);
 
   const filterArgs = useMemo(() => {
     const minMrrRaw = debouncedFilters.minMrr.trim();
@@ -105,7 +112,8 @@ export function Dashboard() {
     return { center: [top.lng, top.lat], zoom: 9 };
   }, [debouncedFilters, filterArgs.country, startups]);
 
-  const isInitialLoad = !data?.startups || !mapDataReady;
+  const mapReady = mapDataReady || mapReadyTimedOut;
+  const isInitialLoad = !data?.startups || !mapReady;
   const isFiltering = !isInitialLoad && (isFetching || isPending);
 
   return (
