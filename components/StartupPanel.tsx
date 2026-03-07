@@ -118,7 +118,7 @@ export function StartupPanel({ startup, onClose }: Props) {
           }}
           className={
             isMobile
-              ? 'absolute bottom-0 left-0 right-0 z-40 flex w-full max-h-[85vh] flex-col overflow-hidden rounded-t-2xl'
+              ? 'absolute bottom-0 left-0 right-0 z-40 flex w-full max-h-[85dvh] flex-col overflow-hidden rounded-t-2xl safe-area-pb'
               : 'absolute right-0 top-0 bottom-0 z-40 flex w-[420px] max-w-full flex-col overflow-hidden'
           }
           style={{
@@ -270,7 +270,7 @@ export function StartupPanel({ startup, onClose }: Props) {
             </button>
           </div>
 
-          <div className='flex-1 overflow-y-auto p-5'>
+          <div className='min-h-0 flex-1 overflow-y-auto overflow-x-hidden p-5'>
             <div className='grid grid-cols-2 gap-2'>
               {[
                 {

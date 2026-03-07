@@ -34,121 +34,98 @@ export function ActivityLog({
 
   const isCollapsed = isMobile && !expanded;
 
-  /* Mobile: compact pill in corner when collapsed, bottom sheet when expanded */
-  if (isMobile && isCollapsed) {
+  /* Mobile: full-width bottom strip (like desktop) - collapsible to slim bar so it's never buried */
+  if (isMobile) {
     return (
-      <button
-        type='button'
-        onClick={() => setExpanded(true)}
-        className='absolute bottom-2 right-2 z-20 flex items-center gap-1.5 rounded-md px-2.5 py-1.5 touch-manipulation'
+      <div
+        className='absolute bottom-0 left-0 right-0 z-30 sm:hidden'
         style={{
-          background: 'linear-gradient(180deg, #1a1d24 0%, #0f1216 100%)',
-          border: '1px solid #2a2e36',
-          boxShadow: '0 4px 20px rgba(0,0,0,0.5)',
+          background:
+            'linear-gradient(180deg, #1a1d24 0%, #0f1216 50%, #0a0c10 100%)',
+          borderTop: '2px solid #2a2e36',
+          boxShadow:
+            'inset 0 1px 0 rgba(255,255,255,0.03), 0 -8px 32px rgba(0,0,0,0.6)',
         }}
-        aria-label={`Expand activity log (${recent.length} items)`}
       >
-        <span
-          className='font-mono text-[9px] font-bold uppercase'
-          style={{ color: '#64748b' }}
-        >
-          ▸
-        </span>
-        <span
-          className='font-mono text-[10px] font-bold tabular-nums'
-          style={{ color: '#f59e0b' }}
-        >
-          {recent.length}
-        </span>
-        <span className='font-mono text-[9px]' style={{ color: '#64748b' }}>
-          activity
-        </span>
-      </button>
-    );
-  }
-
-  /* Mobile expanded: bottom sheet overlay */
-  if (isMobile && expanded) {
-    return (
-      <>
         <div
-          className='fixed inset-0 z-50 flex items-end justify-center sm:hidden'
-          aria-modal
+          className='h-1 w-full'
+          style={{
+            background:
+              'repeating-linear-gradient(-45deg, #f59e0b 0, #f59e0b 6px, #0a0c10 6px, #0a0c10 12px)',
+            borderBottom: '1px solid rgba(245,158,11,0.2)',
+          }}
+        />
+        <div
+          className={`flex flex-col transition-all ${
+            isCollapsed
+              ? 'max-h-[48px] overflow-hidden'
+              : 'max-h-[45dvh] overflow-hidden'
+          }`}
         >
-          <div
-            className='absolute inset-0 bg-black/50'
-            onClick={() => setExpanded(false)}
-            aria-hidden
-          />
-          <div
-            className='relative z-10 max-h-[35vh] w-full max-w-[100%] overflow-hidden rounded-t-2xl'
-            style={{
-              background: 'linear-gradient(180deg, #1a1d24 0%, #0f1216 100%)',
-              border: '2px solid #2a2e36',
-              boxShadow: '0 -20px 60px rgba(0,0,0,0.7)',
-            }}
+          <button
+            type='button'
+            onClick={() => setExpanded(!expanded)}
+            className='flex w-full items-center justify-between px-4 py-2.5 touch-manipulation'
+            aria-expanded={expanded}
+            aria-label={
+              isCollapsed ? 'Expand activity log' : 'Collapse activity log'
+            }
           >
-            <div
-              className='sticky top-0 flex items-center justify-between border-b px-4 py-2'
-              style={{ borderColor: '#2a2e36', background: '#1a1d24' }}
+            <span
+              className='font-mono text-[8px] font-bold uppercase tracking-[0.3em]'
+              style={{ color: '#64748b' }}
             >
-              <span
-                className='font-mono text-[9px] font-bold uppercase tracking-wider'
-                style={{ color: '#94a3b8' }}
-              >
-                ▸ ACTIVITY LOG
-              </span>
-              <button
-                type='button'
-                onClick={() => setExpanded(false)}
-                className='font-mono text-[9px] touch-manipulation'
+              ▸ ACTIVITY LOG ({recent.length})
+            </span>
+            <span className='font-mono text-[9px]' style={{ color: '#64748b' }}>
+              {isCollapsed ? '▼' : '▲'}
+            </span>
+          </button>
+          <div
+            className={`overflow-x-auto overflow-y-auto px-4 pb-3 scrollbar-none ${
+              isCollapsed ? 'hidden' : 'min-h-0 max-h-[calc(45dvh-48px)]'
+            }`}
+          >
+            {recent.length === 0 ? (
+              <p
+                className='py-1 font-mono text-[10px] uppercase tracking-wider'
                 style={{ color: '#64748b' }}
               >
-                Close
-              </button>
-            </div>
-            <div className='overflow-x-auto px-3 py-2 scrollbar-none'>
-              {recent.length === 0 ? (
-                <p
-                  className='py-2 font-mono text-[10px] uppercase'
-                  style={{ color: '#64748b' }}
-                >
-                  [ No activity ]
-                </p>
-              ) : (
-                <div className='flex gap-2'>
-                  {recent.map((s) => (
-                    <button
-                      key={s.slug}
-                      type='button'
-                      onClick={() =>
-                        onSelectStartup(selectedSlug === s.slug ? null : s.slug)
-                      }
-                      className='flex shrink-0 items-center gap-1.5 border px-2 py-1.5 font-mono text-[9px] touch-manipulation'
-                      style={{
-                        background:
-                          selectedSlug === s.slug
-                            ? 'rgba(245,158,11,0.12)'
-                            : 'rgba(42,46,54,0.8)',
-                        border: `1px solid ${selectedSlug === s.slug ? '#f59e0b' : '#374151'}`,
-                        color: '#e5e7eb',
-                      }}
-                    >
-                      <span className='text-sm'>
-                        {flag(s.country ?? '') ?? '🌐'}
-                      </span>
-                      <span className='max-w-[80px] truncate'>{s.name}</span>
-                      <span style={{ color: '#64748b' }}>
-                        ${((s.mrr ?? 0) / 100).toLocaleString()}
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
+                [ No activity ]
+              </p>
+            ) : (
+              <div className='flex flex-wrap gap-2'>
+                {recent.map((s) => (
+                  <button
+                    key={s.slug}
+                    type='button'
+                    onClick={() =>
+                      onSelectStartup(selectedSlug === s.slug ? null : s.slug)
+                    }
+                    className='flex shrink-0 items-center gap-1.5 border px-2.5 py-1.5 font-mono text-[9px] touch-manipulation'
+                    style={{
+                      background:
+                        selectedSlug === s.slug
+                          ? 'rgba(245,158,11,0.12)'
+                          : 'rgba(42,46,54,0.8)',
+                      border: `1px solid ${selectedSlug === s.slug ? '#f59e0b' : '#374151'}`,
+                      color: '#e5e7eb',
+                    }}
+                  >
+                    <span className='text-sm'>
+                      {flag(s.country ?? '') ?? '🌐'}
+                    </span>
+                    <span className='max-w-[100px] truncate'>{s.name}</span>
+                    <span style={{ color: '#64748b' }}>
+                      ${((s.mrr ?? 0) / 100).toLocaleString()}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         </div>
-      </>
+      </div>
     );
   }
 
