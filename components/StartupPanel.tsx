@@ -252,17 +252,24 @@ export function StartupPanel({ startup, onClose }: Props) {
                 >
                   {startup.name}
                 </h2>
-                {startup.website && (
-                  <a
-                    href={startup.website}
-                    target='_blank'
-                    rel='noopener noreferrer'
-                    className='mt-0.5 block truncate font-mono text-[10px] transition-colors'
-                    style={{ color: '#f59e0b' }}
-                  >
-                    &gt; {startup.website.replace(/^https?:\/\//, '')}
-                  </a>
-                )}
+                {startup.website &&
+                  (() => {
+                    const url = startup.website.startsWith('http')
+                      ? startup.website
+                      : `https://${startup.website}`;
+                    const display = url.replace(/^https?:\/\//, '');
+                    return (
+                      <a
+                        href={url}
+                        target='_blank'
+                        rel='noopener noreferrer'
+                        className='mt-0.5 block truncate font-mono text-[10px] transition-colors'
+                        style={{ color: '#f59e0b' }}
+                      >
+                        &gt; {display}
+                      </a>
+                    );
+                  })()}
               </div>
             </div>
 
