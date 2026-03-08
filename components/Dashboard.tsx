@@ -2,7 +2,7 @@
 
 import { code } from 'country-emoji';
 import { useState, useMemo, useDeferredValue, useEffect } from 'react';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { getCoordsForCountry } from '@/lib/countryCoords';
 import { RadarMap, type FlyToTarget } from '@/components/RadarMap';
@@ -41,7 +41,6 @@ const FOCUS_ZOOM = 14;
 
 export function Dashboard() {
   const pathname = usePathname();
-  const router = useRouter();
   const segment =
     pathname === '/' ? '' : (pathname.slice(1).split('/')[0] ?? '');
   const [filters, setFilters] = useState<Filters>(defaultFilters);
@@ -421,7 +420,12 @@ export function Dashboard() {
           {segment && (
             <button
               type='button'
-              onClick={() => router.replace('/')}
+              onClick={() => {
+                setSelectedSlug(null);
+                setLookedUpStartup(null);
+                setFocusFlyTarget(null);
+                window.history.replaceState(null, '', '/');
+              }}
               className='font-mono text-[10px] uppercase tracking-wider px-2 py-1.5 rounded border'
               style={{
                 borderColor: '#2a2e36',
@@ -471,7 +475,7 @@ export function Dashboard() {
             setSelectedSlug(null);
             setLookedUpStartup(null);
             setFocusFlyTarget(null);
-            if (segment) router.replace('/');
+            if (segment) window.history.replaceState(null, '', '/');
           }}
         />
 
@@ -494,7 +498,10 @@ export function Dashboard() {
                 type='button'
                 onClick={() => {
                   setShowNotFoundModal(false);
-                  router.replace('/');
+                  setSelectedSlug(null);
+                  setLookedUpStartup(null);
+                  setFocusFlyTarget(null);
+                  window.history.replaceState(null, '', '/');
                 }}
                 className='font-mono text-[10px] uppercase tracking-wider px-4 py-2 rounded border self-start'
                 style={{
