@@ -398,6 +398,23 @@ export const RadarMap = memo(function RadarMap({
     [featureStructures, loadedLogoSlugs],
   );
 
+  const FOCUS_ZOOM_CLOSE = 14;
+  const FOCUS_ZOOM_WIDE = 5;
+
+  const effectiveFlyTarget = useMemo((): FlyToTarget | null => {
+    if (selectedSlug && featureStructures.length > 0) {
+      const f = featureStructures.find(
+        (x) => x.properties.slug === selectedSlug,
+      );
+      if (f)
+        return {
+          center: f.geometry.coordinates,
+          zoom: flyToTarget?.zoom ?? FOCUS_ZOOM_CLOSE,
+        };
+    }
+    return flyToTarget ?? null;
+  }, [selectedSlug, featureStructures, flyToTarget]);
+
   const pendingLogoSlugsRef = useRef<Set<string>>(new Set());
   const flushLogoTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
     null,
@@ -528,18 +545,45 @@ export const RadarMap = memo(function RadarMap({
   }, [mapReady, startups, maxLogos]);
 
   useEffect(() => {
-    if (!mapReady || !mapRef.current || !flyToTarget) return;
-    mapRef.current.flyTo({
-      center: flyToTarget.center,
-      zoom: flyToTarget.zoom,
+    if (!mapReady || !mapRef.current || !effectiveFlyTarget) return;
+    const map = mapRef.current;
+    const center = effectiveFlyTarget.center;
+    const zoom = effectiveFlyTarget.zoom;
+
+    if (selectedSlug && zoom >= FOCUS_ZOOM_CLOSE - 1) {
+      map.flyTo({
+        center,
+        zoom: FOCUS_ZOOM_WIDE,
+        duration: 900,
+        essential: true,
+      });
+      const onMoveEnd = () => {
+        map.off('moveend', onMoveEnd);
+        map.flyTo({
+          center,
+          zoom: FOCUS_ZOOM_CLOSE,
+          duration: 1200,
+          essential: true,
+        });
+      };
+      map.once('moveend', onMoveEnd);
+      return () => {
+        map.off('moveend', onMoveEnd);
+      };
+    }
+
+    map.flyTo({
+      center,
+      zoom,
       duration: 1500,
       essential: true,
     });
   }, [
     mapReady,
-    flyToTarget?.center[0],
-    flyToTarget?.center[1],
-    flyToTarget?.zoom,
+    selectedSlug,
+    effectiveFlyTarget?.center[0],
+    effectiveFlyTarget?.center[1],
+    effectiveFlyTarget?.zoom,
   ]);
 
   return (

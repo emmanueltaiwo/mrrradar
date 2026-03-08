@@ -2,6 +2,7 @@
 
 import { code } from 'country-emoji';
 import { useState, useMemo, useDeferredValue, useEffect } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { getCoordsForCountry } from '@/lib/countryCoords';
 import { RadarMap, type FlyToTarget } from '@/components/RadarMap';
@@ -36,15 +37,25 @@ export const INVALID_COUNTRY_SENTINEL = '__INVALID_COUNTRY__';
 const FILTER_DEBOUNCE_MS = 500;
 const MOBILE_MAP_CAP = 600;
 
+const FOCUS_ZOOM = 14;
+
 export function Dashboard() {
+  const pathname = usePathname();
+  const router = useRouter();
+  const segment =
+    pathname === '/' ? '' : (pathname.slice(1).split('/')[0] ?? '');
   const [filters, setFilters] = useState<Filters>(defaultFilters);
   const [selectedSlug, setSelectedSlug] = useState<string | null>(null);
   const [mapDataReady, setMapDataReady] = useState(false);
   const [mapReadyTimedOut, setMapReadyTimedOut] = useState(false);
+  const [lookedUpStartup, setLookedUpStartup] = useState<Startup | null>(null);
+  const [focusFlyTarget, setFocusFlyTarget] = useState<FlyToTarget | null>(
+    null,
+  );
+  const [showNotFoundModal, setShowNotFoundModal] = useState(false);
   const isMobile = useMediaQuery('(max-width: 767px)');
   const debouncedFilters = useDebounce(filters, FILTER_DEBOUNCE_MS);
 
-  // On mobile the map may never fire 'idle'; don't block the app forever
   useEffect(() => {
     const t = setTimeout(() => setMapReadyTimedOut(true), 10_000);
     return () => clearTimeout(t);
@@ -84,13 +95,14 @@ export function Dashboard() {
   const startupsRaw = data?.startups;
   const startups = useDeferredValue(startupsRaw ?? []);
   const selectedStartup =
-    selectedSlug != null
+    lookedUpStartup ??
+    (selectedSlug != null
       ? (startups.find((s) => s.slug === selectedSlug) ?? null)
-      : null;
+      : null);
 
   const DEFAULT_MAP_VIEW: FlyToTarget = { center: [0, 20], zoom: 1.5 };
 
-  const flyToTarget = useMemo((): FlyToTarget | null => {
+  const computedFlyToTarget = useMemo((): FlyToTarget | null => {
     const hasFilter =
       debouncedFilters.name.trim() !== '' ||
       debouncedFilters.country.trim() !== '' ||
@@ -115,9 +127,50 @@ export function Dashboard() {
     return { center: [top.lng, top.lat], zoom: 9 };
   }, [debouncedFilters, filterArgs.country, startups]);
 
+  const flyToTarget = focusFlyTarget ?? computedFlyToTarget;
+
   const mapReady = mapDataReady || mapReadyTimedOut;
   const isInitialLoad = !data?.startups || !mapReady;
   const isFiltering = !isInitialLoad && (isFetching || isPending);
+
+  useEffect(() => {
+    if (!segment) {
+      setLookedUpStartup(null);
+      setFocusFlyTarget(null);
+      setShowNotFoundModal(false);
+      setSelectedSlug(null);
+      return;
+    }
+    if (isInitialLoad) return;
+    let cancelled = false;
+    fetch(`/api/startups/lookup?q=${encodeURIComponent(segment)}`)
+      .then((res) => {
+        if (cancelled) return;
+        if (res.ok) return res.json();
+        if (res.status === 404) {
+          setLookedUpStartup(null);
+          setFocusFlyTarget(null);
+          setSelectedSlug(null);
+          setShowNotFoundModal(true);
+          return;
+        }
+      })
+      .then((data: { startup: Startup } | undefined) => {
+        if (cancelled || !data?.startup) return;
+        const s = data.startup;
+        setLookedUpStartup(s);
+        setSelectedSlug(s.slug);
+        const lat = s.lat ?? 20;
+        const lng = s.lng ?? 0;
+        setFocusFlyTarget({ center: [lng, lat], zoom: FOCUS_ZOOM });
+      })
+      .catch(() => {
+        if (!cancelled) setShowNotFoundModal(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [segment, isInitialLoad]);
 
   const startupsForMap = useMemo(
     () => (isMobile ? startups.slice(0, MOBILE_MAP_CAP) : startups),
@@ -365,6 +418,20 @@ export function Dashboard() {
               SYSTEMS ONLINE
             </span>
           </span>
+          {segment && (
+            <button
+              type='button'
+              onClick={() => router.replace('/')}
+              className='font-mono text-[10px] uppercase tracking-wider px-2 py-1.5 rounded border'
+              style={{
+                borderColor: '#2a2e36',
+                background: 'rgba(0,0,0,0.4)',
+                color: '#64748b',
+              }}
+            >
+              Clear
+            </button>
+          )}
           <div
             className='absolute right-3 top-1/2 h-1.5 w-1.5 -translate-y-1/2 rounded-full'
             style={{
@@ -400,8 +467,47 @@ export function Dashboard() {
 
         <StartupPanel
           startup={selectedStartup ?? null}
-          onClose={() => setSelectedSlug(null)}
+          onClose={() => {
+            setSelectedSlug(null);
+            setLookedUpStartup(null);
+            setFocusFlyTarget(null);
+            if (segment) router.replace('/');
+          }}
         />
+
+        {showNotFoundModal && (
+          <div
+            className='absolute inset-0 z-50 flex items-center justify-center p-4'
+            style={{ background: 'rgba(0,0,0,0.7)' }}
+          >
+            <div
+              className='max-w-sm w-full rounded-lg border p-6 flex flex-col gap-4'
+              style={{
+                borderColor: '#2a2e36',
+                background: 'linear-gradient(180deg, #1a1d24 0%, #0f1216 100%)',
+              }}
+            >
+              <p className='font-mono text-sm uppercase tracking-wider text-(--text-dim)'>
+                Startup not found
+              </p>
+              <button
+                type='button'
+                onClick={() => {
+                  setShowNotFoundModal(false);
+                  router.replace('/');
+                }}
+                className='font-mono text-[10px] uppercase tracking-wider px-4 py-2 rounded border self-start'
+                style={{
+                  borderColor: '#f59e0b',
+                  color: '#f59e0b',
+                  background: 'transparent',
+                }}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        )}
       </main>
     </div>
   );
