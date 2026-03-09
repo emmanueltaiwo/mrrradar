@@ -1,8 +1,5 @@
 /**
  * Fetches all startups from TrustMRR API and writes data/startups.json.
- * Run: npm run sync-startups (loads TRUST_MRR_API_KEY from .env.local if present)
- * Or: TRUST_MRR_API_KEY=xxx npm run sync-startups
- * Used by GitHub Actions cron (daily).
  */
 
 import fs from 'fs';
@@ -13,7 +10,6 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
 const OUT_PATH = path.join(ROOT, 'data', 'startups.json');
 
-// Load .env.local so `npm run sync-startups` works without exporting vars
 if (!process.env.TRUST_MRR_API_KEY) {
   const envPath = path.join(ROOT, '.env.local');
   if (fs.existsSync(envPath)) {

@@ -1,6 +1,3 @@
-/**
- * Startup shape from data/startups.json (and API). Used by Dashboard, StartupPanel, etc.
- */
 export type Startup = {
   slug: string;
   name: string;
@@ -26,6 +23,5 @@ export type Startup = {
   paymentProvider?: string;
   targetAudience?: string;
   foundedDate?: string;
-  /** When this record was last synced (ms since epoch). From JSON sync. */
   lastSyncedAt?: number;
-}
+};

@@ -11,21 +11,25 @@ export type StartupsResponse = {
   startups: Startup[];
   syncedAt: string;
   totalCount: number;
-  /** Sum of MRR for all matching startups (before cap), in cents */
   totalMrr: number;
 };
 
 export async function fetchStartups(
-  args: StartupsFilterArgs
+  args: StartupsFilterArgs,
 ): Promise<StartupsResponse> {
   const params = new URLSearchParams();
+
   if (args.name) params.set('name', args.name);
   if (args.country) params.set('country', args.country);
   if (args.minMrr != null) params.set('minMrr', String(args.minMrr));
   if (args.maxMrr != null) params.set('maxMrr', String(args.maxMrr));
+
   const qs = params.toString();
+
   const res = await fetch(`/api/startups${qs ? `?${qs}` : ''}`);
+
   if (!res.ok) throw new Error(res.statusText);
+
   return res.json();
 }
 
