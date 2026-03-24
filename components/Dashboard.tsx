@@ -1,7 +1,7 @@
 'use client';
 
 import { code } from 'country-emoji';
-import { useState, useMemo, useDeferredValue, useEffect } from 'react';
+import { useState, useMemo, useDeferredValue, useEffect, use } from 'react';
 import { usePathname } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { getCoordsForCountry } from '@/lib/countryCoords';
@@ -132,44 +132,36 @@ export function Dashboard() {
   const isInitialLoad = !data?.startups || !mapReady;
   const isFiltering = !isInitialLoad && (isFetching || isPending);
 
+  const { data: startupData } = useQuery({
+    queryKey: ["startup", segment],
+    queryFn: () => {
+      if (!segment) return Promise.resolve(null);
+      return fetch(`/api/startups/lookup?q=${encodeURIComponent(segment)}`)
+        .then((res) => {
+          if (res.ok) return res.json();
+          if (res.status === 404) {
+            setShowNotFoundModal(true);
+            return null;
+          }
+          throw new Error('Failed to lookup startup');
+        })
+        .then((data: { startup: Startup } | null) => data?.startup ?? null);
+    },
+  });
+
   useEffect(() => {
-    if (!segment) {
+    if (startupData) {
+      setLookedUpStartup(startupData);
+      setSelectedSlug(startupData.slug);
+      const lat = startupData.lat ?? 20;
+      const lng = startupData.lng ?? 0;
+      setFocusFlyTarget({ center: [lng, lat], zoom: FOCUS_ZOOM });
+    } else {
       setLookedUpStartup(null);
-      setFocusFlyTarget(null);
-      setShowNotFoundModal(false);
       setSelectedSlug(null);
-      return;
-    }
-    if (isInitialLoad) return;
-    let cancelled = false;
-    fetch(`/api/startups/lookup?q=${encodeURIComponent(segment)}`)
-      .then((res) => {
-        if (cancelled) return;
-        if (res.ok) return res.json();
-        if (res.status === 404) {
-          setLookedUpStartup(null);
-          setFocusFlyTarget(null);
-          setSelectedSlug(null);
-          setShowNotFoundModal(true);
-          return;
-        }
-      })
-      .then((data: { startup: Startup } | undefined) => {
-        if (cancelled || !data?.startup) return;
-        const s = data.startup;
-        setLookedUpStartup(s);
-        setSelectedSlug(s.slug);
-        const lat = s.lat ?? 20;
-        const lng = s.lng ?? 0;
-        setFocusFlyTarget({ center: [lng, lat], zoom: FOCUS_ZOOM });
-      })
-      .catch(() => {
-        if (!cancelled) setShowNotFoundModal(true);
-      });
-    return () => {
-      cancelled = true;
+      setFocusFlyTarget(null);
     };
-  }, [segment, isInitialLoad]);
+  }, [startupData]);
 
   const startupsForMap = useMemo(
     () => (isMobile ? startups.slice(0, MOBILE_MAP_CAP) : startups),
