@@ -5,7 +5,7 @@ import {
   formatOgdollars,
   formatFoundedDate,
 } from './og-styles';
-import type { StartupDoc } from './startup-lookup';
+import type { Startup } from '@/types/startup';
 
 export { OG_SIZE };
 
@@ -197,7 +197,7 @@ export function DefaultOgImage() {
   );
 }
 
-export function StartupOgImage({ startup }: { startup: StartupDoc }) {
+export function StartupOgImage({ startup }: { startup: Startup }) {
   const mrr = startup.mrr ?? 0;
   const total = startup.revenueTotal ?? 0;
   const founded = formatFoundedDate(startup.foundedDate);

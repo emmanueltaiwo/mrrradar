@@ -1,7 +1,7 @@
 'use client';
 
 import { code } from 'country-emoji';
-import { useState, useMemo, useDeferredValue, useEffect, use } from 'react';
+import { useState, useMemo, useDeferredValue, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { getCoordsForCountry } from '@/lib/countryCoords';
@@ -47,7 +47,6 @@ export function Dashboard() {
   const [selectedSlug, setSelectedSlug] = useState<string | null>(null);
   const [mapDataReady, setMapDataReady] = useState(false);
   const [mapReadyTimedOut, setMapReadyTimedOut] = useState(false);
-  const [lookedUpStartup, setLookedUpStartup] = useState<Startup | null>(null);
   const [focusFlyTarget, setFocusFlyTarget] = useState<FlyToTarget | null>(
     null,
   );
@@ -93,11 +92,6 @@ export function Dashboard() {
 
   const startupsRaw = data?.startups;
   const startups = useDeferredValue(startupsRaw ?? []);
-  const selectedStartup =
-    lookedUpStartup ??
-    (selectedSlug != null
-      ? (startups.find((s) => s.slug === selectedSlug) ?? null)
-      : null);
 
   const DEFAULT_MAP_VIEW: FlyToTarget = { center: [0, 20], zoom: 1.5 };
 
@@ -126,8 +120,6 @@ export function Dashboard() {
     return { center: [top.lng, top.lat], zoom: 9 };
   }, [debouncedFilters, filterArgs.country, startups]);
 
-  const flyToTarget = focusFlyTarget ?? computedFlyToTarget;
-
   const mapReady = mapDataReady || mapReadyTimedOut;
   const isInitialLoad = !data?.startups || !mapReady;
   const isFiltering = !isInitialLoad && (isFetching || isPending);
@@ -149,19 +141,18 @@ export function Dashboard() {
     },
   });
 
-  useEffect(() => {
-    if (startupData) {
-      setLookedUpStartup(startupData);
-      setSelectedSlug(startupData.slug);
-      const lat = startupData.lat ?? 20;
-      const lng = startupData.lng ?? 0;
-      setFocusFlyTarget({ center: [lng, lat], zoom: FOCUS_ZOOM });
-    } else {
-      setLookedUpStartup(null);
-      setSelectedSlug(null);
-      setFocusFlyTarget(null);
-    };
+  const selectedStartup = startupData ?? (selectedSlug != null
+    ? (startups.find((s) => s.slug === selectedSlug) ?? null)
+    : null);
+
+  const urlFlyTarget = useMemo((): FlyToTarget | null => {
+    if (!startupData) return null;
+    const lat = startupData.lat ?? 20;
+    const lng = startupData.lng ?? 0;
+    return { center: [lng, lat], zoom: FOCUS_ZOOM };
   }, [startupData]);
+
+  const flyToTarget = focusFlyTarget ?? urlFlyTarget ?? computedFlyToTarget;
 
   const startupsForMap = useMemo(
     () => (isMobile ? startups.slice(0, MOBILE_MAP_CAP) : startups),
@@ -414,7 +405,6 @@ export function Dashboard() {
               type='button'
               onClick={() => {
                 setSelectedSlug(null);
-                setLookedUpStartup(null);
                 setFocusFlyTarget(null);
                 window.history.replaceState(null, '', '/');
               }}
@@ -465,7 +455,6 @@ export function Dashboard() {
           startup={selectedStartup ?? null}
           onClose={() => {
             setSelectedSlug(null);
-            setLookedUpStartup(null);
             setFocusFlyTarget(null);
             if (segment) window.history.replaceState(null, '', '/');
           }}
@@ -491,7 +480,6 @@ export function Dashboard() {
                 onClick={() => {
                   setShowNotFoundModal(false);
                   setSelectedSlug(null);
-                  setLookedUpStartup(null);
                   setFocusFlyTarget(null);
                   window.history.replaceState(null, '', '/');
                 }}

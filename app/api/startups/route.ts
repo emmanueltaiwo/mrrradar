@@ -1,19 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
+import type { Startup } from '@/types/startup';
 
 const INVALID_COUNTRY_SENTINEL = '__INVALID_COUNTRY__';
 const DEFAULT_LIMIT = 3000;
-
-type StartupDoc = {
-  slug: string;
-  name: string;
-  country?: string;
-  mrr: number;
-  lat?: number;
-  lng?: number;
-  [key: string]: unknown;
-};
 
 function matchesName(
   s: { name?: string },
@@ -24,9 +15,9 @@ function matchesName(
 }
 
 function filterStartups(
-  startups: StartupDoc[],
+  startups: Startup[],
   params: { name?: string; country?: string; minMrr?: number; maxMrr?: number },
-): { startups: StartupDoc[]; totalCount: number; totalMrr: number } {
+): { startups: Startup[]; totalCount: number; totalMrr: number } {
   if (params.country === INVALID_COUNTRY_SENTINEL) {
     return { startups: [], totalCount: 0, totalMrr: 0 };
   }
@@ -36,7 +27,7 @@ function filterStartups(
   const minMrr = params.minMrr;
   const maxMrr = params.maxMrr;
 
-  let candidates: StartupDoc[];
+  let candidates: Startup[];
 
   if (country !== undefined && country !== '') {
     candidates = startups.filter(
@@ -53,7 +44,6 @@ function filterStartups(
     candidates = candidates.filter((s) => s.mrr <= maxMrr);
   }
 
-  // Totals from full filtered set (before cap / name filter)
   const totalCount = candidates.length;
   const totalMrr = candidates.reduce((sum, s) => sum + (s.mrr ?? 0), 0);
 
@@ -70,54 +60,53 @@ function filterStartups(
 }
 
 export async function GET(request: NextRequest) {
-  try {
-    const filePath = path.join(process.cwd(), 'data', 'startups.json');
-    if (!fs.existsSync(filePath)) {
-      return NextResponse.json(
-        { error: 'Startups data not found. Run sync or wait for cron.' },
-        { status: 503 },
-      );
-    }
-    const raw = fs.readFileSync(filePath, 'utf8');
-    const data = JSON.parse(raw) as {
-      syncedAt: string;
-      startups: StartupDoc[];
-    };
-    const { startups: allStartups, syncedAt } = data;
-    if (!Array.isArray(allStartups)) {
-      return NextResponse.json(
-        { error: 'Invalid startups data' },
-        { status: 503 },
-      );
-    }
+  const filePath = path.join(process.cwd(), 'data', 'startups.json');
 
-    const name = request.nextUrl.searchParams.get('name') ?? undefined;
-    const country = request.nextUrl.searchParams.get('country') ?? undefined;
-    const minMrrParam = request.nextUrl.searchParams.get('minMrr');
-    const maxMrrParam = request.nextUrl.searchParams.get('maxMrr');
-    const minMrr = minMrrParam != null ? Number(minMrrParam) : undefined;
-    const maxMrr = maxMrrParam != null ? Number(maxMrrParam) : undefined;
-
-    const { startups, totalCount, totalMrr } = filterStartups(allStartups, {
-      name,
-      country,
-      minMrr: Number.isFinite(minMrr) ? minMrr : undefined,
-      maxMrr: Number.isFinite(maxMrr) ? maxMrr : undefined,
-    });
-
+  if (!fs.existsSync(filePath)) {
     return NextResponse.json(
-      { startups, syncedAt, totalCount, totalMrr },
-      {
-        headers: {
-          'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300',
-        },
-      },
+      { error: 'Startups data not available. Data sync may be in progress.' },
+      { status: 503 },
     );
-  } catch (e) {
-    console.error('[api/startups]', e);
+  }
+
+  let data: { syncedAt: string; startups: Startup[] };
+  try {
+    const raw = fs.readFileSync(filePath, 'utf8');
+    data = JSON.parse(raw) as { syncedAt: string; startups: Startup[] };
+  } catch {
     return NextResponse.json(
-      { error: 'Failed to load startups' },
+      { error: 'Failed to parse startups data.' },
       { status: 500 },
     );
   }
+
+  if (!Array.isArray(data.startups)) {
+    return NextResponse.json(
+      { error: 'Invalid startups data format.' },
+      { status: 500 },
+    );
+  }
+
+  const name = request.nextUrl.searchParams.get('name') ?? undefined;
+  const country = request.nextUrl.searchParams.get('country') ?? undefined;
+  const minMrrParam = request.nextUrl.searchParams.get('minMrr');
+  const maxMrrParam = request.nextUrl.searchParams.get('maxMrr');
+  const minMrr = minMrrParam != null ? Number(minMrrParam) : undefined;
+  const maxMrr = maxMrrParam != null ? Number(maxMrrParam) : undefined;
+
+  const { startups, totalCount, totalMrr } = filterStartups(data.startups, {
+    name,
+    country,
+    minMrr: Number.isFinite(minMrr) ? minMrr : undefined,
+    maxMrr: Number.isFinite(maxMrr) ? maxMrr : undefined,
+  });
+
+  return NextResponse.json(
+    { startups, syncedAt: data.syncedAt, totalCount, totalMrr },
+    {
+      headers: {
+        'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300',
+      },
+    },
+  );
 }

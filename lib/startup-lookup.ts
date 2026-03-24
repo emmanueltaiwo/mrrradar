@@ -1,26 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-
-export type StartupDoc = {
-  slug: string;
-  name: string;
-  website?: string;
-  logo?: string;
-  description?: string;
-  category?: string;
-  country?: string;
-  lat?: number;
-  lng?: number;
-  mrr: number;
-  revenueLast30Days?: number;
-  revenueTotal?: number;
-  growthRate?: number;
-  customers?: number;
-  activeSubscriptions?: number;
-  xHandle?: string;
-  foundedDate?: string;
-  [key: string]: unknown;
-};
+import type { Startup } from '@/types/startup';
 
 function domainFromWebsite(website: string | undefined): string {
   if (!website?.trim()) return '';
@@ -34,13 +14,13 @@ function domainFromWebsite(website: string | undefined): string {
   }
 }
 
-export function lookupStartup(q: string): StartupDoc | null {
+export function lookupStartup(q: string): Startup | null {
   try {
     const filePath = path.join(process.cwd(), 'data', 'startups.json');
     if (!fs.existsSync(filePath)) return null;
 
     const raw = fs.readFileSync(filePath, 'utf8');
-    const data = JSON.parse(raw) as { startups: StartupDoc[] };
+    const data = JSON.parse(raw) as { startups: Startup[] };
     const all = data?.startups;
 
     if (!Array.isArray(all)) return null;

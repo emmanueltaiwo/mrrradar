@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { Orbitron, JetBrains_Mono } from 'next/font/google';
 import { QueryProvider } from '@/components/QueryProvider';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import './globals.css';
 import { Analytics } from '@vercel/analytics/next';
@@ -54,7 +55,9 @@ export default function RootLayout({
       <body
         className={`${orbitron.variable} ${jetbrains.variable} antialiased`}
       >
-        <QueryProvider>{children}</QueryProvider>
+        <ErrorBoundary>
+          <QueryProvider>{children}</QueryProvider>
+        </ErrorBoundary>
         <Analytics />
       </body>
     </html>

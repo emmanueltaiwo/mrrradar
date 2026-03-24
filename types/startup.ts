@@ -24,4 +24,5 @@ export type Startup = {
   targetAudience?: string;
   foundedDate?: string;
   lastSyncedAt?: number;
+  [key: string]: unknown;
 };
