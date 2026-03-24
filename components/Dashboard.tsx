@@ -47,7 +47,6 @@ export function Dashboard() {
   const [selectedSlug, setSelectedSlug] = useState<string | null>(null);
   const [mapDataReady, setMapDataReady] = useState(false);
   const [mapReadyTimedOut, setMapReadyTimedOut] = useState(false);
-  const [lookedUpStartup, setLookedUpStartup] = useState<Startup | null>(null);
   const [focusFlyTarget, setFocusFlyTarget] = useState<FlyToTarget | null>(
     null,
   );
@@ -93,11 +92,6 @@ export function Dashboard() {
 
   const startupsRaw = data?.startups;
   const startups = useDeferredValue(startupsRaw ?? []);
-  const selectedStartup =
-    lookedUpStartup ??
-    (selectedSlug != null
-      ? (startups.find((s) => s.slug === selectedSlug) ?? null)
-      : null);
 
   const DEFAULT_MAP_VIEW: FlyToTarget = { center: [0, 20], zoom: 1.5 };
 
@@ -126,50 +120,39 @@ export function Dashboard() {
     return { center: [top.lng, top.lat], zoom: 9 };
   }, [debouncedFilters, filterArgs.country, startups]);
 
-  const flyToTarget = focusFlyTarget ?? computedFlyToTarget;
-
   const mapReady = mapDataReady || mapReadyTimedOut;
   const isInitialLoad = !data?.startups || !mapReady;
   const isFiltering = !isInitialLoad && (isFetching || isPending);
 
-  useEffect(() => {
-    if (!segment) {
-      setLookedUpStartup(null);
-      setFocusFlyTarget(null);
-      setShowNotFoundModal(false);
-      setSelectedSlug(null);
-      return;
-    }
-    if (isInitialLoad) return;
-    let cancelled = false;
-    fetch(`/api/startups/lookup?q=${encodeURIComponent(segment)}`)
-      .then((res) => {
-        if (cancelled) return;
-        if (res.ok) return res.json();
-        if (res.status === 404) {
-          setLookedUpStartup(null);
-          setFocusFlyTarget(null);
-          setSelectedSlug(null);
-          setShowNotFoundModal(true);
-          return;
-        }
-      })
-      .then((data: { startup: Startup } | undefined) => {
-        if (cancelled || !data?.startup) return;
-        const s = data.startup;
-        setLookedUpStartup(s);
-        setSelectedSlug(s.slug);
-        const lat = s.lat ?? 20;
-        const lng = s.lng ?? 0;
-        setFocusFlyTarget({ center: [lng, lat], zoom: FOCUS_ZOOM });
-      })
-      .catch(() => {
-        if (!cancelled) setShowNotFoundModal(true);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [segment, isInitialLoad]);
+  const { data: startupData } = useQuery({
+    queryKey: ["startup", segment],
+    queryFn: () => {
+      if (!segment) return Promise.resolve(null);
+      return fetch(`/api/startups/lookup?q=${encodeURIComponent(segment)}`)
+        .then((res) => {
+          if (res.ok) return res.json();
+          if (res.status === 404) {
+            setShowNotFoundModal(true);
+            return null;
+          }
+          throw new Error('Failed to lookup startup');
+        })
+        .then((data: { startup: Startup } | null) => data?.startup ?? null);
+    },
+  });
+
+  const selectedStartup = startupData ?? (selectedSlug != null
+    ? (startups.find((s) => s.slug === selectedSlug) ?? null)
+    : null);
+
+  const urlFlyTarget = useMemo((): FlyToTarget | null => {
+    if (!startupData) return null;
+    const lat = startupData.lat ?? 20;
+    const lng = startupData.lng ?? 0;
+    return { center: [lng, lat], zoom: FOCUS_ZOOM };
+  }, [startupData]);
+
+  const flyToTarget = focusFlyTarget ?? urlFlyTarget ?? computedFlyToTarget;
 
   const startupsForMap = useMemo(
     () => (isMobile ? startups.slice(0, MOBILE_MAP_CAP) : startups),
@@ -422,7 +405,6 @@ export function Dashboard() {
               type='button'
               onClick={() => {
                 setSelectedSlug(null);
-                setLookedUpStartup(null);
                 setFocusFlyTarget(null);
                 window.history.replaceState(null, '', '/');
               }}
@@ -473,7 +455,6 @@ export function Dashboard() {
           startup={selectedStartup ?? null}
           onClose={() => {
             setSelectedSlug(null);
-            setLookedUpStartup(null);
             setFocusFlyTarget(null);
             if (segment) window.history.replaceState(null, '', '/');
           }}
@@ -499,7 +480,6 @@ export function Dashboard() {
                 onClick={() => {
                   setShowNotFoundModal(false);
                   setSelectedSlug(null);
-                  setLookedUpStartup(null);
                   setFocusFlyTarget(null);
                   window.history.replaceState(null, '', '/');
                 }}

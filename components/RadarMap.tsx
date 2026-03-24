@@ -15,8 +15,6 @@ type Props = {
   onSelectStartup: (slug: string | null) => void;
   onMapDataReady?: () => void;
   flyToTarget?: FlyToTarget | null;
-  /** Cap logo loads (0 = no logos, use default icon). Use on mobile for perf. */
-  maxLogos?: number;
 };
 
 const SOURCE_ID = 'startups';
@@ -216,7 +214,6 @@ export const RadarMap = memo(function RadarMap({
   onSelectStartup,
   onMapDataReady,
   flyToTarget,
-  maxLogos,
 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<import('mapbox-gl').Map | null>(null);
@@ -463,86 +460,78 @@ export const RadarMap = memo(function RadarMap({
     };
   }, [mapReady, geojson]);
 
+  // Viewport-based lazy logo loading
   useEffect(() => {
     if (!mapReady || !mapRef.current) return;
 
     const map = mapRef.current;
-    const LOGO_BATCH_MS = 180;
-    const MAX_CONCURRENT_LOGO_LOADS = 12;
-    const nextLoaded = new Set<string>();
-    const queue: { slug: string; url: string }[] = [];
-    let inFlight = 0;
+    const MIN_ZOOM_FOR_LOGOS = 1; // Load logos at any zoom level where they're visible
+    const loadingLogos = new Set<string>();
 
-    const logoCap = maxLogos ?? startups.length;
-    for (const s of startups) {
-      if (logoCap !== undefined && queue.length >= logoCap) break;
-      if (!s.logo?.trim()) continue;
-      if (map.hasImage(s.slug)) {
-        nextLoaded.add(s.slug);
-        continue;
-      }
-      queue.push({
-        slug: s.slug,
-        url: `/api/logo?url=${encodeURIComponent(s.logo.trim())}`,
-      });
-    }
-    setLoadedLogoSlugs((prev) =>
-      prev.size === nextLoaded.size &&
-      [...prev].every((id) => nextLoaded.has(id))
-        ? prev
-        : nextLoaded,
-    );
-
-    function scheduleFlush() {
-      if (flushLogoTimeoutRef.current) return;
-      flushLogoTimeoutRef.current = setTimeout(() => {
-        flushLogoTimeoutRef.current = null;
-        flushPendingLogos.current();
-      }, LOGO_BATCH_MS);
-    }
-
-    function onLogoLoaded(slug: string) {
-      pendingLogoSlugsRef.current.add(slug);
-      scheduleFlush();
-      inFlight--;
-      drain();
-    }
-
-    function drain() {
-      while (inFlight < MAX_CONCURRENT_LOGO_LOADS && queue.length > 0) {
-        const { slug, url } = queue.shift()!;
-        inFlight++;
-        const img = new Image();
-        img.onload = () => {
-          if (!mapRef.current || mapRef.current.hasImage(slug)) {
-            inFlight--;
-            drain();
-            return;
-          }
-          try {
-            mapRef.current.addImage(slug, imageToIconData(img));
-            onLogoLoaded(slug);
-          } catch {
-            inFlight--;
-            drain();
-          }
-        };
-        img.onerror = () => {
-          inFlight--;
-          drain();
-        };
-        img.src = url;
+    function getVisibleBounds(): mapboxgl.LngLatBounds | null {
+      try {
+        return map.getBounds();
+      } catch {
+        return null;
       }
     }
-    drain();
+
+    function isInViewport(startup: Startup, bounds: mapboxgl.LngLatBounds | null): boolean {
+      if (!bounds || startup.lat == null || startup.lng == null) return false;
+      return bounds.contains([startup.lng, startup.lat]);
+    }
+
+    function shouldLoadLogo(startup: Startup): boolean {
+      const zoom = map.getZoom();
+      if (zoom < MIN_ZOOM_FOR_LOGOS) return false;
+      if (!startup.logo?.trim()) return false;
+      if (map.hasImage(startup.slug)) return false;
+      if (loadingLogos.has(startup.slug)) return false;
+      return isInViewport(startup, getVisibleBounds());
+    }
+
+    function loadLogo(startup: Startup) {
+      const slug = startup.slug;
+      loadingLogos.add(slug);
+
+      const img = new Image();
+      img.onload = () => {
+        loadingLogos.delete(slug);
+        if (!mapRef.current || mapRef.current.hasImage(slug)) return;
+        try {
+          mapRef.current.addImage(slug, imageToIconData(img));
+          pendingLogoSlugsRef.current.add(slug);
+          // Trigger geojson update to show the logo
+          flushPendingLogos.current();
+        } catch {
+          // Failed to add image, ignore
+        }
+      };
+      img.onerror = () => {
+        loadingLogos.delete(slug);
+      };
+      img.src = `/api/logo?url=${encodeURIComponent(startup.logo!.trim())}`;
+    }
+
+    function loadVisibleLogos() {
+      const visible = startups.filter(shouldLoadLogo);
+      for (const startup of visible) {
+        loadLogo(startup);
+      }
+    }
+
+    // Load initially visible logos
+    loadVisibleLogos();
+
+    // Reload on map movement
+    map.on('moveend', loadVisibleLogos);
+    map.on('zoomend', loadVisibleLogos);
 
     return () => {
-      if (flushLogoTimeoutRef.current) {
-        clearTimeout(flushLogoTimeoutRef.current);
-        flushLogoTimeoutRef.current = null;
-      }
+      map.off('moveend', loadVisibleLogos);
+      map.off('zoomend', loadVisibleLogos);
     };
-  }, [mapReady, startups, maxLogos]);
+  }, [mapReady, startups]);
 
   useEffect(() => {
     if (!mapReady || !mapRef.current || !effectiveFlyTarget) return;
@@ -578,13 +567,7 @@ export const RadarMap = memo(function RadarMap({
       duration: 1500,
       essential: true,
     });
-  }, [
-    mapReady,
-    selectedSlug,
-    effectiveFlyTarget?.center[0],
-    effectiveFlyTarget?.center[1],
-    effectiveFlyTarget?.zoom,
-  ]);
+  }, [mapReady, selectedSlug, effectiveFlyTarget]);
 
   return (
     <div
