@@ -27,6 +27,7 @@ const LOGOS_LAYER = 'startups-logos';
 const DEFAULT_ICON_ID = 'startup-default';
 
 const LOGO_PX = 48;
+const DEFAULT_MAX_LOGOS = 800;
 const SPREAD_BASE = 0.35;
 const COORD_PRECISION = 1;
 
@@ -419,6 +420,8 @@ export const RadarMap = memo(function RadarMap({
   const flushLogoTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
     null,
   );
+  const visibleLogoSlugsRef = useRef<Set<string>>(new Set());
+  const failedLogoSlugsRef = useRef<Set<string>>(new Set());
   const setDataRafRef = useRef<number | null>(null);
   const lastGeojsonRef = useRef(geojson);
   const hasCalledMapDataReadyRef = useRef(false);
@@ -469,29 +472,74 @@ export const RadarMap = memo(function RadarMap({
     const map = mapRef.current;
     const LOGO_BATCH_MS = 180;
     const MAX_CONCURRENT_LOGO_LOADS = 12;
-    const nextLoaded = new Set<string>();
-    const queue: { slug: string; url: string }[] = [];
     let inFlight = 0;
 
-    const logoCap = maxLogos ?? startups.length;
+    const logoCap =
+      maxLogos ??
+      (DEFAULT_MAX_LOGOS > 0
+        ? Math.min(DEFAULT_MAX_LOGOS, startups.length)
+        : 0);
+
+    const startupMetaBySlug = new Map<
+      string,
+      { url: string; mrr: number; hasLogo: boolean }
+    >();
     for (const s of startups) {
-      if (logoCap !== undefined && queue.length >= logoCap) break;
-      if (!s.logo?.trim()) continue;
-      if (map.hasImage(s.slug)) {
-        nextLoaded.add(s.slug);
-        continue;
-      }
-      queue.push({
-        slug: s.slug,
-        url: `/api/logo?url=${encodeURIComponent(s.logo.trim())}`,
+      const logo = s.logo?.trim();
+      startupMetaBySlug.set(s.slug, {
+        url: logo && /^https?:\/\//i.test(logo) ? logo : '',
+        mrr: typeof s.mrr === 'number' ? s.mrr : 0,
+        hasLogo: Boolean(logo),
       });
     }
-    setLoadedLogoSlugs((prev) =>
-      prev.size === nextLoaded.size &&
-      [...prev].every((id) => nextLoaded.has(id))
-        ? prev
-        : nextLoaded,
-    );
+
+    const inFlightSlugs = new Set<string>();
+    const queue: { slug: string; url: string }[] = [];
+
+    const recomputeVisibleLogoSlugs = () => {
+      const map = mapRef.current;
+      if (!map) return;
+      const bounds = map.getBounds();
+      if (!bounds) return;
+
+      const candidates: { slug: string; mrr: number; url: string }[] = [];
+      for (const f of featureStructures) {
+        const slug = f.properties.slug;
+        if (failedLogoSlugsRef.current.has(slug)) continue;
+        const meta = startupMetaBySlug.get(slug);
+        if (!meta?.hasLogo || !meta.url) continue;
+        const [lng, lat] = f.geometry.coordinates;
+        if (!bounds.contains([lng, lat])) continue;
+        if (map.hasImage(slug)) continue;
+        candidates.push({ slug, mrr: meta.mrr, url: meta.url });
+      }
+
+      if (selectedSlug) {
+        if (failedLogoSlugsRef.current.has(selectedSlug)) {
+          // skip
+        } else {
+          const meta = startupMetaBySlug.get(selectedSlug);
+          if (meta?.hasLogo && meta.url && !map.hasImage(selectedSlug)) {
+            candidates.push({
+              slug: selectedSlug,
+              mrr: meta.mrr + Number.MAX_SAFE_INTEGER / 4,
+              url: meta.url,
+            });
+          }
+        }
+      }
+
+      candidates.sort((a, b) => b.mrr - a.mrr);
+      const next = new Set<string>();
+      for (const c of candidates) {
+        if (logoCap !== undefined && next.size >= logoCap) break;
+        next.add(c.slug);
+      }
+
+      visibleLogoSlugsRef.current = next;
+    };
+
+    recomputeVisibleLogoSlugs();
 
     function scheduleFlush() {
       if (flushLogoTimeoutRef.current) return;
@@ -505,17 +553,35 @@ export const RadarMap = memo(function RadarMap({
       pendingLogoSlugsRef.current.add(slug);
       scheduleFlush();
       inFlight--;
+      inFlightSlugs.delete(slug);
       drain();
     }
 
     function drain() {
+      // Enqueue any newly-visible slugs that aren't already loaded or in-flight.
+      const desired = visibleLogoSlugsRef.current;
+      for (const slug of desired) {
+        if (!mapRef.current) break;
+        if (mapRef.current.hasImage(slug)) continue;
+        if (inFlightSlugs.has(slug)) continue;
+        if (queue.some((q) => q.slug === slug)) continue;
+        const meta = startupMetaBySlug.get(slug);
+        if (!meta?.hasLogo || !meta.url) continue;
+        queue.push({ slug, url: meta.url });
+      }
+
       while (inFlight < MAX_CONCURRENT_LOGO_LOADS && queue.length > 0) {
         const { slug, url } = queue.shift()!;
+        if (inFlightSlugs.has(slug)) continue;
         inFlight++;
+        inFlightSlugs.add(slug);
         const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.referrerPolicy = 'no-referrer';
         img.onload = () => {
           if (!mapRef.current || mapRef.current.hasImage(slug)) {
             inFlight--;
+            inFlightSlugs.delete(slug);
             drain();
             return;
           }
@@ -523,26 +589,39 @@ export const RadarMap = memo(function RadarMap({
             mapRef.current.addImage(slug, imageToIconData(img));
             onLogoLoaded(slug);
           } catch {
+            failedLogoSlugsRef.current.add(slug);
             inFlight--;
+            inFlightSlugs.delete(slug);
             drain();
           }
         };
         img.onerror = () => {
+          failedLogoSlugsRef.current.add(slug);
           inFlight--;
+          inFlightSlugs.delete(slug);
           drain();
         };
         img.src = url;
       }
     }
+
+    const onViewportChange = () => {
+      recomputeVisibleLogoSlugs();
+      drain();
+    };
+    map.on('moveend', onViewportChange);
+    map.on('zoomend', onViewportChange);
     drain();
 
     return () => {
+      map.off('moveend', onViewportChange);
+      map.off('zoomend', onViewportChange);
       if (flushLogoTimeoutRef.current) {
         clearTimeout(flushLogoTimeoutRef.current);
         flushLogoTimeoutRef.current = null;
       }
     };
-  }, [mapReady, startups, maxLogos]);
+  }, [mapReady, startups, maxLogos, featureStructures, selectedSlug]);
 
   useEffect(() => {
     if (!mapReady || !mapRef.current || !effectiveFlyTarget) return;

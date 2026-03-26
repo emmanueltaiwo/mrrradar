@@ -453,6 +453,8 @@ export function Dashboard() {
           onSelectStartup={setSelectedSlug}
           onMapDataReady={() => setMapDataReady(true)}
           flyToTarget={flyToTarget}
+          // Safety cap: prevents loading thousands of proxied logos (bandwidth + bot risk).
+          maxLogos={isMobile ? 300 : 800}
         />
 
         <StatsPanel
